@@ -1,7 +1,7 @@
 ### Winter 2024-2025 lunar project
-Contains scripts and related work for binning minerals
+Contains scripts and related work for binning spectra
 
-## TODO (in order of priority)
+### TODO (in order of priority)
 - convert to python script file to run from cli
 - modify to read in a folder of csvs and a target to bin to (m3 in original case)
 - use variable (0.02 vs 0.04) step size based on micron range
