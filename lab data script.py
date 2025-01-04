@@ -39,7 +39,11 @@ for file_path in file_paths_list:
     lab['Wavelength (µm)'] = lab['Wavelength (nm)']/1000
     lab = lab.set_index('Wavelength (µm)')
 
+    # csv format
+    lab.columns = lab.columns.str.replace(",","")
+
     y_column_label = lab.columns[1]
+
     x_raw = list(lab.index)
     y_raw = list(lab[y_column_label])
 
@@ -116,6 +120,7 @@ for file_path in file_paths_list:
     ### writing file
     def writeFile(path, mode): # x = new, w = overwrite
         output = open(path, mode)
+
         output.write(f"Wavelength raw,{y_column_label} raw,Wavelength bin avg,{y_column_label} bin avg,Wavelength cubic spline of bin avg,{y_column_label} cubic spline of bin avg\n")
 
         # ends when shortest zip input runs out
