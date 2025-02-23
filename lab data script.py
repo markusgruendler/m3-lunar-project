@@ -46,14 +46,18 @@ WL_MAX = float(x_m3[-1])+STEPSIZE/2
 
 for file_path in file_paths_list:
     ### read, clean, establish raw lab data
+    print(f"Loading {file_path}")
     lab = pd.read_csv(file_path)
-    lab['Wavelength (µm)'] = lab['Wavelength (nm)']/1000
+    if 'Wavelength (µm)' not in lab.columns:
+        lab['Wavelength (µm)'] = lab['Wavelength (nm)']/1000
+        lab.drop('Wavelength (nm)', axis = 'columns', inplace=True)
     lab = lab.set_index('Wavelength (µm)')
+    lab.dropna(axis = 0, inplace=True) # for missing values in lab csv file
 
     # csv format
     lab.columns = lab.columns.str.replace(",","")
 
-    y_column_label = lab.columns[1]
+    y_column_label = lab.columns[0]
 
     x_raw = list(lab.index)
     # x_raw rounding to 5 digits and recast to float (optional)
