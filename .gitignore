@@ -1,0 +1,10 @@
+# system files
+.DS_Store
+
+# python cache files
+__pycache__/
+
+# virtual environment folders
+.ipynb_checkpoints/
+.jupyter/
+
