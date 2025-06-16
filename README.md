@@ -1,4 +1,4 @@
-### Winter 2024-2025 lunar project
+### m^3 lunar project
 Contains scripts and related work for binning spectra
 
 ### TODO (in order of priority)
