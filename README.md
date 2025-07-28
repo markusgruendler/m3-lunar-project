@@ -1,10 +1,7 @@
-### m^3 lunar project
-Contains scripts and related work for binning spectra
+### M3 lunar project
+Contains scripts and related work for converting lab spectra to targeted and global wavelength formats.
 
-### TODO (in order of priority)
-- convert to python script file to run from cli
-- modify to read in a folder of csvs and a target to bin to (m3 in original case)
-- use variable (0.02 vs 0.04) step size based on micron range
-- rename + recolor graph legend
-- save graphs into subfolders based on lunar_analog_spectra folders (Iceland_JB501C graph goes into /Glass_volcanics)
-- prompt user whether to save graphs
+### TODO
+- file-writing for targeted:global
+- unified .py script for targeted:global
+- select-a-folder funtionality for lab:targeted and targeted:global
