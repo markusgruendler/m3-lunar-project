@@ -57,7 +57,7 @@ for file_path in file_paths_list:
     lab.dropna(axis = 0, inplace=True) # for missing values in lab csv file
 
     # csv format
-    lab.columns = lab.columns.str.replace(",","")
+    lab.columns = lab.columns.str.replace(",", "")
 
     y_column_label = lab.columns[0]
 
@@ -129,33 +129,15 @@ for file_path in file_paths_list:
         x_avg.append(float(bin))
 
     # print(f"# of average reflectance values {len(y_avg)}, first and last averaged points {[(x_avg[0], y_avg[0]), (x_avg[-1], y_avg[-1])]}")
-
-    ### cubic spline to same number of points as bins
-    from scipy.interpolate import CubicSpline
-
-    spline_points = len(x_avg)
-    cs_avg = CubicSpline(x_avg, y_avg)
-
-    x_spline_avg = list(np.linspace(x_avg[0], x_avg[-1], spline_points))
-    y_spline_avg = list(cs_avg(x_spline_avg))
-
-    ### writing file
-    count = 0
-    while len(x_raw) != len(x_avg) or len(x_raw) != len(x_spline_avg):
-        x_avg.append('')
-        y_avg.append('')
-        x_spline_avg.append('')
-        y_spline_avg.append('')
-        count += 1
     
     def writeFile(path, mode): # x = new, w = overwrite
         output = open(path, mode)
 
-        output.write(f"Wavelength (µm) raw,{y_column_label} raw,Wavelength (µm) bin avg,{y_column_label} bin avg,Wavelength (µm) cubic spline of bin avg,{y_column_label} cubic spline of bin avg\n")
+        output.write(f"Wavelength (µm) raw,{y_column_label} raw,Wavelength (µm) bin avg,{y_column_label} bin avg\n")
 
         # ends when shortest zip input runs out
-        for xr, yr, xavg, yavg, xspline, yspline in zip(x_raw, y_raw, x_avg, y_avg, x_spline_avg, y_spline_avg):
-            output.write(f"{xr},{yr},{xavg},{yavg},{xspline},{yspline}\n")
+        for xr, yr, xavg, yavg in zip(x_raw, y_raw, x_avg, y_avg):
+            output.write(f"{xr},{yr},{xavg},{yavg}\n")
         output.close()
     
     output_path = file_path.replace('/lunar_analog_spectra/', '/csv output/')
