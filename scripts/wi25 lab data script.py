@@ -1,99 +1,118 @@
 # M3: Lab to Targeted Conversion
 
-import numpy as np
 import pandas as pd
-import matplotlib.pyplot as plot
-import seaborn as sns
+from pathlib import Path
 from collections import defaultdict
-import os
 
-def writeFile(path, mode): # x = new, w = overwrite
-        output = open(path, mode)
-
-        output.write(f"Wavelength (µm) raw,{y_column_label} raw,Wavelength (µm) target,{y_column_label} target\n")
+def findFolder(input_path, SEARCH_MSG):
+    current_path = Path(input_path)
+    if not current_path.exists(): return("Invalid Path")
     
-        for xr, yr, xavg, yavg in zip(x_raw, y_raw, x_avg, y_avg):
-            output.write(f"{xr},{yr},{xavg},{yavg}\n")
-        output.close()
+    print(f"\nCurrent path: {current_path}")
+    print(SEARCH_MSG)
+    
+    # list out folders with [#] as identifier
+    folder_list = [f for f in current_path.iterdir() if f.is_dir()]
+    print("> Folders in current folder:")
+    if len(folder_list) == 0: print("[#] No folders found.")
+    for c, i in enumerate(folder_list):
+        print(f"[{c}] {i.name}")
+    print("")
 
-file_paths_list = []
-parent = None
-if 'lunar_analog_spectra' not in os.listdir(os.getcwd()):
-    print(f'lunar_analog_spectra folder not found')
-else:
-    parent = os.path.join(os.getcwd(), 'lunar_analog_spectra')
-    for folder_name in os.listdir(parent):
-        if folder_name[-9:] == ".DS_Store": continue
-        folder_path = os.path.join(parent, folder_name)
-        for file in os.listdir(folder_path):
-            if file[-4:] == '.csv':
-                file_path = os.path.join(folder_path, file)
-                file_paths_list.append(file_path)
+    choice = input().lower()
+    while choice not in ["e", "s", "u"] + [str(i) for i in range(len(folder_list))]:
+        choice = input("Couldn't read input, trying again. Target #: ").lower()
 
-print(f"# of file paths: {len(file_paths_list)}" + f"\n" + f"first: {file_paths_list[0]}" + f" \n" + f"last:  {file_paths_list[-1]}")
+    if choice.lower() == "e": return("Exiting.")
+    if choice.lower() == "s": return(current_path)
+    if choice.lower() == "u": return(findFolder(current_path.parent, SEARCH_MSG))
+    if choice.isnumeric() and int(choice) in range(len(folder_list)):
+        current_path = current_path / folder_list[int(choice)]
+        if current_path.is_dir():
+            return(findFolder(current_path, SEARCH_MSG))
 
+    return("Error reading choice, exiting.")
+
+SEARCH_MSG_IN = \
+    f"> Construct the path to the INPUT folder with the csv files to be converted.\n" \
+    f"> Save the current path to end search.\n" \
+    f"> To select option [#], enter #.\n" \
+    f"[E] Exit without saving\n" \
+    f"[S] Save current path\n" \
+    f"[U] Search up one level"
+
+SEARCH_MSG_OUT = \
+    f"> Construct the path to the OUTPUT folder where the csv files will be saved.\n" \
+    f"> Save the current path to end search.\n" \
+    f"> To select option [#], enter #.\n" \
+    f"[E] Exit without saving\n" \
+    f"[S] Save current path\n" \
+    f"[U] Search up one level"
+
+target_folder = findFolder(Path.cwd(), SEARCH_MSG_IN)
+file_paths_list = [f for f in target_folder.iterdir() if f.is_file() and f.suffix == ".csv"] 
+print(f"> {len(file_paths_list)} files found\n")
+
+output_folder = findFolder(Path.cwd(), SEARCH_MSG_OUT)
 
 # assumed step size between m3 points
 STEPSIZE = 0.01
 
-# boundaries for wavelengths, outside of which to ignore/truncate data
+# initial boundaries for wavelengths, outside of which to ignore/truncate data
 WL_MIN = 0.446
 WL_MAX = 2.99
 
-m3_path = 'clark_m3_lab_spectra/Clark et al M3_Wavelengths_center channel or mean of Gaussian.txt'
-
-# 20250202: using clark files as wavelength bin centers
-m3 = pd.read_csv(m3_path, skiprows=3)
-
+# define points around which to bin
+m3_path = Path('../input files/Clark m3 target wavelengths.csv').resolve()
+m3 = pd.read_csv(m3_path)
 m3.columns = ['Wavelength (µm)']
 
 x_m3 = (m3['Wavelength (µm)']).tolist()
 x_m3 = [f"{wl:.5f}" for wl in x_m3]
-print(f"# of m^3 wavelengths: {len(x_m3)}, first and last 10: \n{x_m3[0:10]}, \n{x_m3[-1-10:-1]}")
+print(f"> {len(x_m3)} m^3 wavelengths found")
 
+# updated boundaries for wavelengths
 WL_MIN = float(x_m3[0])-STEPSIZE/2
 WL_MAX = float(x_m3[-1])+STEPSIZE/2
 # print(f"# of m^3 wavelengths: {len(x_m3)}, first and last: {x_m3[0], x_m3[-1]}")
 
-for file_path in file_paths_list:
+for file_counter, file_path in enumerate(file_paths_list):
     ### read, clean, establish raw lab data
-    print(f"Loading {file_path}")
+    print(f"Loading '{file_path.name}' from folder '{target_folder.name}'")
     lab = pd.read_csv(file_path)
-    if 'Wavelength (µm)' not in lab.columns:
-        lab['Wavelength (µm)'] = lab['Wavelength (nm)']/1000
+
+    FIRST_COLUMN = 'Wavelength (µm)'
+    if FIRST_COLUMN not in list(lab.columns):
+        lab[FIRST_COLUMN] = lab['Wavelength (nm)']/1000
         lab.drop('Wavelength (nm)', axis = 'columns', inplace=True)
-    lab = lab.set_index('Wavelength (µm)')
-    lab.dropna(axis = 0, inplace=True) # for missing values in lab csv file
+    order = [FIRST_COLUMN] + [col for col in lab.columns if col != FIRST_COLUMN]
+    lab = lab[order]
+    lab.columns = lab.columns.str.replace(",","")
+    lab.dropna(axis = 0, inplace=True)
 
-    # csv format
-    lab.columns = lab.columns.str.replace(",", "")
-
-    y_column_label = lab.columns[0]
-
-    x_raw = list(lab.index)
-    # x_raw rounding to 5 digits and recast to float (optional)
-    x_raw = [float(f"{wl:.5f}") for wl in x_raw]
+    y_column_label = lab.columns[1]
     y_raw = list(lab[y_column_label])
+    x_raw = list(lab[lab.columns[0]])
+    x_raw = [float(f"{wl:.5f}") for wl in x_raw]
 
-    # print(f"first and last raw x,y pairs\n{(x_raw[0], y_raw[0])}\n{(x_raw[-1], y_raw[-1])}")
 
-    ### create bins stored as dictionary of lists with numerical string keys
+    ### bins stored as dictionaries of lists with numerical string keys
     binned_raw = defaultdict(list)
     for x in x_m3:
         binned_raw[x] = []
     len(binned_raw)
 
-    ### populate bins
+    # append points to bin with wavelength within half of stepsize
+    # average points across bin
     # precondition: wavelengths are sorted in ascending order
     binCounter = 0
-    for x, y in zip(x_raw, y_raw):
+    for x,y in zip(x_raw, y_raw):
         if x < WL_MIN or x > WL_MAX: continue
 
         lbound = float(x_m3[binCounter]) - STEPSIZE/2
         rbound = float(x_m3[binCounter]) + STEPSIZE/2
 
-        # while point doesn't fit into current bin
-        # increment binCounter unless not found
+        # while point doesn't fit into current bin, try next
         while x > rbound: 
             if binCounter + 1 < len(x_m3):
                 binCounter += 1
@@ -102,51 +121,43 @@ for file_path in file_paths_list:
                 lbound = float(x_m3[binCounter]) - STEPSIZE/2
                 rbound = float(x_m3[binCounter]) + STEPSIZE/2
             else:
-                print(f"Point {x, y} within WL MINMAX range {WL_MIN, WL_MAX} but no bin found, last {lbound, rbound}")
+                print(f"Point {x, y} within WL MINMAX range {WL_MIN, WL_MAX} but no bin found, last bin: {lbound, rbound}")
                 break
-        
-        # add point to bin
         binned_raw[x_m3[binCounter]].append((x,y))
-        
-        # print(f"x {x}, band center {nextbin}, upper bound of bin {nextbin + STEPSIZE/2}")
 
-    # print(f"last bin index: {binCounter}, input list size: {len(x_raw)}")
-
-    ### average wavelengths and reflectance values per bin
-    y_avg = []
     x_avg = []
+    y_avg = []
     for count, bin in enumerate(binned_raw):
-        if len(binned_raw[bin]) == 0:
-            # x_avg.append(bin)
-            # y_avg.append(-1)
-            print(f"Empty bin at {bin}")
-            continue
+        if len(binned_raw[bin]) == 0: continue
 
-        # average over all raw reflectance values
-        avgx = 0
+        # avgx = 0
         avgy = 0
         for x,y in binned_raw[bin]:
-            avgx += x
+            # avgx += x
             avgy += y
-        avgx /= len(binned_raw[bin])
+        # avgx /= len(binned_raw[bin])
         avgy /= len(binned_raw[bin])
 
-        y_avg.append(avgy)
-        # takes average x wl
-        # x_avg.append(avgx)
-        # takes band center
+        # band center as WL coordinate to match to target 10nm
         x_avg.append(float(bin))
+        # x_avg.append(avgx)
+        y_avg.append(avgy)
 
-    # print(f"# of average reflectance values {len(y_avg)}, first and last averaged points {[(x_avg[0], y_avg[0]), (x_avg[-1], y_avg[-1])]}")
+
+    ### df and save
+    df_target = pd.DataFrame({"Wavelength (µm) target": x_avg, f"{lab.columns[1]} target": y_avg})
+    df_target = pd.concat((lab, df_target), axis = 1)
+    df_target.head()
+
+    if (output_folder / file_path.name).exists():
+        print(f"File '{file_path.name}' already exists in output folder, overwrite (Y/N)?")
+        ans = input()
+        while ans.lower() not in ["y", "n"]:
+            ans = input()
+        if ans.lower() == "y":
+            df_target.to_csv(path_or_buf = output_folder/file_path.name, index = False, na_rep = "")
+    else:
+        df_target.to_csv(path_or_buf = output_folder/file_path.name, index = False, na_rep = "")
     
-    output_path = file_path.replace('/lunar_analog_spectra/', '/csv output/')
-
-    try: 
-        writeFile(output_path, 'x')
-        print(output_path)
-    except:
-        writeFile(output_path,'w')
-        print(f'file overwritten for {output_path}')
-        pass
-
-print("process finished")
+    print(f"[{file_counter+1}/{len(file_paths_list)}] Saved '{file_path.name}' to folder '{output_folder.name}'")
+print("Process completed.")
