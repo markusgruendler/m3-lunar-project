@@ -63,13 +63,14 @@ WL_MIN = 0.446
 WL_MAX = 2.99
 
 # define points around which to bin
+print(f"[0/1] Loading wavelengths from 'Clark m3 target wavelengths.csv'")
 m3_path = Path('../input files/Clark m3 target wavelengths.csv').resolve()
 m3 = pd.read_csv(m3_path)
 m3.columns = ['Wavelength (µm)']
 
 x_m3 = (m3['Wavelength (µm)']).tolist()
 x_m3 = [f"{wl:.5f}" for wl in x_m3]
-print(f"> {len(x_m3)} m^3 wavelengths found")
+print(f"[1/1] Found {len(x_m3)} m3 wavelengths")
 
 # updated boundaries for wavelengths
 WL_MIN = float(x_m3[0])-STEPSIZE/2
@@ -78,7 +79,7 @@ WL_MAX = float(x_m3[-1])+STEPSIZE/2
 
 for file_counter, file_path in enumerate(file_paths_list):
     ### read, clean, establish raw lab data
-    print(f"Loading '{file_path.name}' from folder '{target_folder.name}'")
+    print(f"[{file_counter+1}/{len(file_paths_list)}] Loading '{file_path.name}' from folder '{target_folder.name}'")
     lab = pd.read_csv(file_path)
 
     FIRST_COLUMN = 'Wavelength (µm)'
@@ -150,7 +151,7 @@ for file_counter, file_path in enumerate(file_paths_list):
     df_target.head()
 
     if (output_folder / file_path.name).exists():
-        print(f"File '{file_path.name}' already exists in output folder, overwrite (Y/N)?")
+        print(f"[{file_counter+1}/{len(file_paths_list)}] File '{file_path.name}' already exists in output folder, overwrite (Y/N)?")
         ans = input()
         while ans.lower() not in ["y", "n"]:
             ans = input()
