@@ -5,5 +5,6 @@ Contains scripts and related work for converting lab spectra to targeted and glo
 - file-writing for targeted:global
 - unified .py script for targeted:global
 - select-a-folder funtionality for lab:targeted and targeted:global
+- unify precision/truncation format
 - update instructions on .py scripts
 - tutorial video for .py scripts
