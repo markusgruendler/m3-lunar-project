@@ -7,6 +7,15 @@ import seaborn as sns
 from collections import defaultdict
 import os
 
+def writeFile(path, mode): # x = new, w = overwrite
+        output = open(path, mode)
+
+        output.write(f"Wavelength (µm) raw,{y_column_label} raw,Wavelength (µm) target,{y_column_label} target\n")
+    
+        for xr, yr, xavg, yavg in zip(x_raw, y_raw, x_avg, y_avg):
+            output.write(f"{xr},{yr},{xavg},{yavg}\n")
+        output.close()
+
 file_paths_list = []
 parent = None
 if 'lunar_analog_spectra' not in os.listdir(os.getcwd()):
@@ -77,7 +86,7 @@ for file_path in file_paths_list:
     ### populate bins
     # precondition: wavelengths are sorted in ascending order
     binCounter = 0
-    for x,y in zip(x_raw, y_raw):
+    for x, y in zip(x_raw, y_raw):
         if x < WL_MIN or x > WL_MAX: continue
 
         lbound = float(x_m3[binCounter]) - STEPSIZE/2
@@ -129,16 +138,6 @@ for file_path in file_paths_list:
         x_avg.append(float(bin))
 
     # print(f"# of average reflectance values {len(y_avg)}, first and last averaged points {[(x_avg[0], y_avg[0]), (x_avg[-1], y_avg[-1])]}")
-    
-    def writeFile(path, mode): # x = new, w = overwrite
-        output = open(path, mode)
-
-        output.write(f"Wavelength (µm) raw,{y_column_label} raw,Wavelength (µm) bin avg,{y_column_label} bin avg\n")
-
-        # ends when shortest zip input runs out
-        for xr, yr, xavg, yavg in zip(x_raw, y_raw, x_avg, y_avg):
-            output.write(f"{xr},{yr},{xavg},{yavg}\n")
-        output.close()
     
     output_path = file_path.replace('/lunar_analog_spectra/', '/csv output/')
 
