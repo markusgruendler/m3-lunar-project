@@ -1,9 +1,13 @@
 # M3: Lab to Targeted Conversion
 
+
+### imports
 import pandas as pd
 from pathlib import Path
 from collections import defaultdict
 
+
+### methods/statics
 def findFolder(input_path, SEARCH_MSG):
     current_path = Path(input_path)
     if not current_path.exists(): return("Invalid Path")
@@ -17,9 +21,9 @@ def findFolder(input_path, SEARCH_MSG):
     if len(folder_list) == 0: print("[#] No folders found.")
     for c, i in enumerate(folder_list):
         print(f"[{c}] {i.name}")
-    print("")
+    # print("")
 
-    choice = input().lower()
+    choice = input(f"> To select option [#], enter #: ").lower()
     while choice not in ["e", "s", "u"] + [str(i) for i in range(len(folder_list))]:
         choice = input("Couldn't read input, trying again. Target #: ").lower()
 
@@ -31,7 +35,7 @@ def findFolder(input_path, SEARCH_MSG):
         if current_path.is_dir():
             return(findFolder(current_path, SEARCH_MSG))
 
-    return("Error reading choice, exiting.")
+    return("Error reading path, exiting.")
 
 SEARCH_MSG_IN = \
     f"> Construct the path to the INPUT folder with the csv files to be converted.\n" \
@@ -49,12 +53,25 @@ SEARCH_MSG_OUT = \
     f"[S] Save current path\n" \
     f"[U] Search up one level"
 
+
+### io paths
+print(f"[1/2] Declare target folder path.")
 target_folder = findFolder(Path.cwd(), SEARCH_MSG_IN)
+if type(target_folder) == str: 
+    print(f"Exiting program.") 
+    exit()
 file_paths_list = [f for f in target_folder.iterdir() if f.is_file() and f.suffix == ".csv"] 
-print(f"> {len(file_paths_list)} files found\n")
+print(f"[1/2] Saved target folder path, {len(file_paths_list)} files found.\n")
 
+print(f"[2/2] Declare output folder path.")
 output_folder = findFolder(Path.cwd(), SEARCH_MSG_OUT)
+if type(output_folder) == str:
+    print(f"Exiting program.")
+    exit()
+print(f"[2/2] Saved output folder path.\n")
 
+
+### init constants
 # assumed step size between m3 points
 STEPSIZE = 0.01
 
@@ -64,7 +81,7 @@ WL_MAX = 2.99
 
 # define points around which to bin
 print(f"[0/1] Loading wavelengths from 'Clark m3 target wavelengths.csv'")
-m3_path = Path('../input files/Clark m3 target wavelengths.csv').resolve()
+m3_path = Path(__file__).resolve().parent.parent / 'input files' / 'Clark m3 target wavelengths.csv'
 m3 = pd.read_csv(m3_path)
 m3.columns = ['Wavelength (µm)']
 
@@ -77,15 +94,22 @@ WL_MIN = float(x_m3[0])-STEPSIZE/2
 WL_MAX = float(x_m3[-1])+STEPSIZE/2
 # print(f"# of m^3 wavelengths: {len(x_m3)}, first and last: {x_m3[0], x_m3[-1]}")
 
+
+### file processing loop
 for file_counter, file_path in enumerate(file_paths_list):
-    ### read, clean, establish raw lab data
+    ### load data
     print(f"[{file_counter+1}/{len(file_paths_list)}] Loading '{file_path.name}' from folder '{target_folder.name}'")
     lab = pd.read_csv(file_path)
 
     FIRST_COLUMN = 'Wavelength (µm)'
+    ALT_COLUMN = 'Wavelength (nm)'
     if FIRST_COLUMN not in list(lab.columns):
-        lab[FIRST_COLUMN] = lab['Wavelength (nm)']/1000
-        lab.drop('Wavelength (nm)', axis = 'columns', inplace=True)
+        if ALT_COLUMN in list(lab.columns):
+            lab[FIRST_COLUMN] = lab[ALT_COLUMN]/1000
+            lab.drop(ALT_COLUMN, axis = 'columns', inplace=True)
+        else:
+            print(f"No wavelength column found, try renaming the column to 'Wavelength (µm)' or 'Wavelength (nm)'.")
+            exit()
     order = [FIRST_COLUMN] + [col for col in lab.columns if col != FIRST_COLUMN]
     lab = lab[order]
     lab.columns = lab.columns.str.replace(",","")
@@ -114,7 +138,7 @@ for file_counter, file_path in enumerate(file_paths_list):
         rbound = float(x_m3[binCounter]) + STEPSIZE/2
 
         # while point doesn't fit into current bin, try next
-        while x > rbound: 
+        while x > rbound:
             if binCounter + 1 < len(x_m3):
                 binCounter += 1
 
@@ -145,10 +169,9 @@ for file_counter, file_path in enumerate(file_paths_list):
         y_avg.append(avgy)
 
 
-    ### df and save
+    ### concatenate and save
     df_target = pd.DataFrame({"Wavelength (µm) target": x_avg, f"{lab.columns[1]} target": y_avg})
     df_target = pd.concat((lab, df_target), axis = 1)
-    df_target.head()
 
     if (output_folder / file_path.name).exists():
         print(f"[{file_counter+1}/{len(file_paths_list)}] File '{file_path.name}' already exists in output folder, overwrite (Y/N)?")
