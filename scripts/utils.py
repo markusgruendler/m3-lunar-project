@@ -34,6 +34,7 @@ SEARCH_MSG_OUT = \
     f"[S] Save path and end task\n" \
     f"[U] Navigate up (parent folder)"
 
+### methods
 def validate_path(path, verbose=False):
     if Path(path).exists(): 
         if verbose: print(f"--- Path ---" + "\n" + f"- {Path(path)}")
@@ -61,7 +62,6 @@ def prompt_user(choice_list, prompt_msg="> ", error_msg=""):
         choice = input(prompt_msg).lower()
     return choice
 
-### navigation
 def findFolder(input_path, MSG):
     ### validate input path, exit if invalid
     current_path = validate_path(input_path, verbose=False)
