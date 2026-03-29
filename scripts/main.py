@@ -11,20 +11,20 @@ import utils
 # targeted -> global
 # export file
 
-input_path = None
-output_path = None
+input_path = Path.cwd() / "input files"
+output_path = Path.cwd() / "output files"
 
 choice = None
+print(utils.INTRO_MSG)
 while choice != "e":
-    print(utils.PATHS_MSG(input_path, output_path))
-    print(utils.TASKS_MSG)
+    print(utils.MENU_MSG(input_path, output_path))
     choice_list = ["i", "o", "t", "g", "e"]
     choice = utils.prompt_user(choice_list)
 
     if choice == "i": 
-        input_path = utils.findFolder(Path.cwd(), utils.SEARCH_MSG_IN)
+        input_path = utils.findFolder(input_path, "Input")
     if choice == "o": 
-        output_path = utils.findFolder(Path.cwd(), utils.SEARCH_MSG_OUT)
+        output_path = utils.findFolder(output_path, "Output")
     if choice == "t": break #utils.targeted
     if choice == "g": break #utils.global
     if choice == "e": break #utils.save_csv
